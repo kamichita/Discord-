@@ -1,0 +1,5 @@
+pypresence
+asyncio
+websockets
+discord.py
+requests
