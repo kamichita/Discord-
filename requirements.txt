@@ -1,0 +1,6 @@
+pypresence
+asyncio
+websockets
+discord.py
+requests
+bs4
