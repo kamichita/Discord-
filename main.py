@@ -41,4 +41,4 @@ async def on_button_click(inter: discord.Interaction):
             await inter.user.add_roles()
             await inter.response.send_message("付与されました。", ephemeral = True)
 
-client.run(os.getenv('TOKEN')
+client.run(os.getenv('TOKEN'))
