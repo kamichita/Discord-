@@ -1,68 +1,44 @@
 import discord
-import requests
-from bs4 import BeautifulSoup
+import discord.app_commands
 import os
 
-TOKEN = os.getenv("TOKEN")
-
-intents = discord.Intents.default()
-intents.messages = True
+intents = discord.Intents.all()
 client = discord.Client(intents=intents)
+tree = discord.app_commands.CommandTree(client)
 
 @client.event
 async def on_ready():
-    print(f"ログインしました: {client.user}")
+    print(f'Running {client.user}')
+    await tree.sync(guild=discord.Object(id=12345))
 
 @client.event
-async def on_message(message):
-    if message.author.bot:
-        return
-    
-    if message.content.startswith("!ipa"):
-        args = message.content.split(" ")
-        if len(args) < 2:
-            await message.reply("アプリの App Store リンクを入力してください！")
-            return
+async def on_interaction(inter:discord.Interaction):
+    try:
+        if inter.data['component_type'] == 2:
+            await on_button_click(inter)
+    except KeyError:
+        pass
 
-        app_store_url = args[1]
-        if "apps.apple.com" not in app_store_url:
-            await message.reply("有効な App Store のリンクを入力してください！")
-            return
+@tree.command(guild=discord.Object(id=12345), name='rolebuton', description='ロール付与パネルを表示します。')
+async def launch_button(interaction: discord.Interaction, ロール: discord.Role, タイトル: str = None, 説明: str = None):
 
-        try:
-            app_name = get_app_name(app_store_url)
-            results = search_decrypt_day(app_name)
+    if タイトル is None:
+        タイトル = "役職パネル"
+    if 説明 is None:
+        説明 = f"「✅」を押すと、{ロール.mention}が付与されます。"
 
-            if not results:
-                await message.reply(f"「{app_name}」に一致する IPA は見つかりませんでした。")
-                return
+    embed = discord.Embed(title=タイトル, description=説明, color=discord.Color.blue())
+    if interaction.user.guild_permissions.administrator:
+        button = discord.ui.Button(label="✅", style=discord.ButtonStyle.primary, custom_id="check")
+        view = discord.ui.View()
+        view.add_item(button)
+        await interaction.response.send_message(embed=embed, view=view)
 
-            response = f"**{app_name} の IPA:**\n"
-            for r in results:
-                response += f"{r['name']}\n{r['link']}\n\n"
+async def on_button_click(inter: discord.Interaction):
+    custom_id = inter.data["custom_id"]
+    if custom_id == "check":
+            
+            await inter.user.add_roles()
+            await inter.response.send_message("付与されました。", ephemeral = True)
 
-            await message.reply(response)
-
-        except Exception as e:
-            await message.reply("エラーが発生しました。もう一度試してください！")
-            print(e)
-
-def get_app_name(url):
-    res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
-    soup = BeautifulSoup(res.text, "html.parser")
-    return soup.title.text.split(" - ")[0].strip()
-
-def search_decrypt_day(app_name):
-    search_url = f"https://decrypt.day/search?q={app_name}"
-    res = requests.get(search_url, headers={"User-Agent": "Mozilla/5.0"})
-    soup = BeautifulSoup(res.text, "html.parser")
-    results = []
-
-    for result in soup.select(".app-result"):
-        name = result.select_one(".app-title").text.strip()
-        link = result.select_one(".download-link")["href"]
-        results.append({"name": name, "link": link})
-
-    return results
-
-client.run(TOKEN)
+client.run(os.getenv('TOKEN')
