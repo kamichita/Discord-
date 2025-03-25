@@ -9,7 +9,12 @@ tree = discord.app_commands.CommandTree(client)
 @client.event
 async def on_ready():
     print(f'Running {client.user}')
-    await tree.sync(guild=discord.Object(id=12345))
+    try:
+        # コマンドを同期する際は、グローバルコマンドとしてではなく、特定のギルドに対して同期
+        synced = await tree.sync(guild=discord.Object(id=12345))
+        print(f"{len(synced)}個のコマンドを同期しました")
+    except Exception as e:
+        print(f"コマンド同期中にエラーが発生: {e}")
 
 @client.event
 async def on_interaction(inter:discord.Interaction):
